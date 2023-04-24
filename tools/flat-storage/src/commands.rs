@@ -330,6 +330,9 @@ pub fn dump_cmd() {
             println!("prog {}M total {}MB", cnt / 1000_000, tot_sz / 1000_000);
         }
     }
+    println!("final commit");
     update.commit().unwrap();
+    println!("compact");
+    store.compact().unwrap();
     println!("done {}M total {}MB", cnt / 1000_000, tot_sz / 1000_000);
 }
