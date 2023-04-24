@@ -276,6 +276,7 @@ impl FlatStorageCommand {
 
 //const FULL_DB_PATH: &str = "/tmp/src_db";
 const FULL_DB_PATH: &str = "/home/ubuntu/.near/data";
+const DEST_PATH: &str = "/home/pugachag/dump";
 
 pub fn create_test_data() {
     let db = RocksDB::open(
@@ -293,6 +294,18 @@ pub fn create_test_data() {
     update.commit().unwrap();
 }
 
+pub fn open_create() -> Store {
+    let db = RocksDB::open(
+        Path::new(DEST_PATH),
+        &StoreConfig::test_config(),
+        Mode::Create,
+        near_store::Temperature::Hot,
+    )
+    .unwrap();
+    let store = NodeStorage::new(Arc::new(db)).get_hot_store();
+    store
+}
+
 pub fn dump_cmd() {
     let db_src = RocksDB::open(
         Path::new(FULL_DB_PATH),
@@ -301,16 +314,22 @@ pub fn dump_cmd() {
         near_store::Temperature::Hot,
     )
     .unwrap();
-    let mut all = vec![];
     let mut tot_sz = 0;
+    let mut cnt = 0;
+    let store = open_create();
+    let mut update = store.store_update();
     println!("start");
     for res in db_src.iter(DBCol::FlatState) {
         let (key, val) = res.unwrap();
         tot_sz += key.len() + val.len();
-        all.push((key, val));
-        if all.len() % 100 == 0 {
-            println!("read {} total {}MB", all.len(), tot_sz / 1000_000);
+        cnt += 1;
+        update.set(DBCol::FlatState, &key, &val);
+        if cnt % 1000000 == 0 {
+            update.commit().unwrap();
+            update = store.store_update();
+            println!("prog {}M total {}MB", cnt / 1000_000, tot_sz / 1000_000);
         }
     }
-    println!("done {} total {}MB", all.len(), tot_sz / 1000_000);
+    update.commit().unwrap();
+    println!("done {}M total {}MB", cnt / 1000_000, tot_sz / 1000_000);
 }
