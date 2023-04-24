@@ -274,8 +274,8 @@ impl FlatStorageCommand {
     }
 }
 
-const FULL_DB_PATH: &str = "/tmp/src_db";
-//const FULL_DB_PATH: &str = "/home/ubuntu/.near/data";
+//const FULL_DB_PATH: &str = "/tmp/src_db";
+const FULL_DB_PATH: &str = "/home/ubuntu/.near/data";
 
 pub fn create_test_data() {
     let db = RocksDB::open(
