@@ -6,9 +6,11 @@ use near_chain::{
 };
 use near_epoch_manager::EpochManagerAdapter;
 use near_primitives::{state::ValueRef, trie_key::trie_key_parsers::parse_account_id_from_raw_key};
+use near_store::db::{RocksDB, Database};
 use near_store::flat::{store_helper, FlatStorageStatus};
-use near_store::{Mode, NodeStorage, ShardUId, Store, StoreOpener};
+use near_store::{Mode, NodeStorage, ShardUId, Store, StoreConfig, StoreOpener, DBCol};
 use nearcore::{load_config, NearConfig, NightshadeRuntime};
+use std::path::Path;
 use std::{path::PathBuf, sync::Arc, time::Duration};
 use tqdm::tqdm;
 
@@ -36,6 +38,8 @@ enum SubCommand {
     /// Temporary command to set the store version (useful as long flat
     /// storage is enabled only during nightly with separate DB version).
     SetStoreVersion(SetStoreVersionCmd),
+
+    Dump
 }
 
 #[derive(Parser)]
@@ -263,8 +267,49 @@ impl FlatStorageCommand {
                     println!("FAILED - on node {:?}", verified);
                 }
             }
+            SubCommand::Dump => todo!(),
         }
 
         Ok(())
     }
+}
+
+const FULL_DB_PATH: &str = "/tmp/src_db";
+//const FULL_DB_PATH: &str = "/home/ubuntu/.near/data";
+
+pub fn create_test_data() {
+    let db = RocksDB::open(
+        Path::new(FULL_DB_PATH),
+        &StoreConfig::test_config(),
+        Mode::Create,
+        near_store::Temperature::Hot,
+    )
+    .unwrap();
+    let store = NodeStorage::new(Arc::new(db)).get_hot_store();
+    let mut update = store.store_update();
+    for i in 0..30 {
+        update.set_raw_bytes(DBCol::FlatState, format!("key{i}").as_bytes(), b"value");
+    }
+    update.commit().unwrap();
+}
+
+pub fn dump_cmd() {
+    let db_src = RocksDB::open(
+        Path::new(FULL_DB_PATH),
+        &StoreConfig::default(),
+        Mode::ReadOnly,
+        near_store::Temperature::Hot,
+    )
+    .unwrap();
+    let mut all = vec![];
+    let mut tot_sz = 0;
+    for res in db_src.iter(DBCol::FlatState) {
+        let (key, val) = res.unwrap();
+        tot_sz += key.len() + val.len();
+        all.push((key, val));
+        if all.len() % 10000 == 0 {
+            println!("read {} total {}MB", all.len(), tot_sz / 1000_000);
+        }
+    }
+    println!("done {} total {}MB", all.len(), tot_sz / 1000_000);
 }
