@@ -303,11 +303,12 @@ pub fn dump_cmd() {
     .unwrap();
     let mut all = vec![];
     let mut tot_sz = 0;
+    println!("start");
     for res in db_src.iter(DBCol::FlatState) {
         let (key, val) = res.unwrap();
         tot_sz += key.len() + val.len();
         all.push((key, val));
-        if all.len() % 10000 == 0 {
+        if all.len() % 100 == 0 {
             println!("read {} total {}MB", all.len(), tot_sz / 1000_000);
         }
     }
