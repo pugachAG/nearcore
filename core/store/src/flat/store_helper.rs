@@ -117,7 +117,7 @@ pub(crate) fn get_ref(
     store
         .get_ser(FlatStateColumn::State.to_db_col(), &db_key)
         .map_err(|_| FlatStorageError::StorageInternalError)
-        .map(|maybe_value| maybe_value.map(|FlatStateValue::Ref(v)| v))
+        .map(|maybe_value| maybe_value.map(|v: FlatStateValue| todo!()))
 }
 
 // TODO(#8577): make pub(crate) once flat storage creator is moved inside `flat` module.

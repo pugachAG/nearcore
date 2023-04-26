@@ -5,7 +5,7 @@ use near_chain_configs::GenesisValidationMode;
 use near_client::ConfigUpdater;
 use near_cold_store_tool::ColdStoreCommand;
 use near_dyn_configs::{UpdateableConfigLoader, UpdateableConfigLoaderError, UpdateableConfigs};
-use near_flat_storage::commands::{FlatStorageCommand, create_test_data, dump_cmd};
+use near_flat_storage::commands::{FlatStorageCommand, create_test_data, dump_cmd, analyze};
 use near_jsonrpc_primitives::types::light_client::RpcLightClientExecutionProofResponse;
 use near_mirror::MirrorCommand;
 use near_network::tcp;
@@ -121,7 +121,8 @@ impl NeardCmd {
             NeardSubCommand::FlatStorage(cmd) => {
                 //cmd.run(&home_dir)?;
                 //create_test_data();
-                dump_cmd()
+                //dump_cmd();
+                analyze();
             }
             NeardSubCommand::ValidateConfig(cmd) => {
                 cmd.run(&home_dir)?;

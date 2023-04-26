@@ -8,6 +8,7 @@ use near_primitives::types::BlockHeight;
 pub enum FlatStateValue {
     Ref(ValueRef),
     // TODO(8243): add variant here for the inlined value
+    Inlined(Vec<u8>),
 }
 
 #[derive(BorshSerialize, BorshDeserialize, Debug, Clone, PartialEq, Eq)]

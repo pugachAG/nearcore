@@ -1,3 +1,4 @@
+use borsh::{BorshDeserialize, BorshSerialize};
 /// Tools for modifying flat storage - should be used only for experimentation & debugging.
 use clap::Parser;
 use near_chain::{
@@ -7,7 +8,7 @@ use near_chain::{
 use near_epoch_manager::EpochManagerAdapter;
 use near_primitives::{state::ValueRef, trie_key::trie_key_parsers::parse_account_id_from_raw_key};
 use near_store::db::{RocksDB, Database};
-use near_store::flat::{store_helper, FlatStorageStatus};
+use near_store::flat::{store_helper, FlatStorageStatus, FlatStateValue};
 use near_store::{Mode, NodeStorage, ShardUId, Store, StoreConfig, StoreOpener, DBCol};
 use nearcore::{load_config, NearConfig, NightshadeRuntime};
 use std::path::Path;
@@ -335,4 +336,58 @@ pub fn dump_cmd() {
     println!("compact");
     store.compact().unwrap();
     println!("done {}M total {}MB", cnt / 1000_000, tot_sz / 1000_000);
+}
+
+pub fn analyze() {
+    let db_src = RocksDB::open(
+        Path::new("/Users/pugachag/Data/rocksdb/fs/dump"),
+        &StoreConfig::default(),
+        Mode::ReadOnly,
+        near_store::Temperature::Hot,
+    )
+    .unwrap();
+    let mut tot_sz = 0;
+    let mut tot_vals = 0usize;
+    let mut refs_space = 0usize;
+    let mut all_vals = vec![];
+    let limits: Vec<u32> = (5..=12).map(|p| 2u32.pow(p)).collect();
+    let mut space_inlined = vec![0; limits.len()];
+    let mut cnt_inlined = vec![0; limits.len()];
+    let mut cnt = 0;
+    println!("start");
+    for res in db_src.iter(DBCol::FlatState) {
+        let (key, val) = res.unwrap();
+        let fs_val = FlatStateValue::try_from_slice(&val).unwrap();
+        match fs_val {
+            FlatStateValue::Ref(val_ref) => {
+                tot_vals += val_ref.length as usize;
+                all_vals.push(val_ref.length);
+                let inlined_len = FlatStateValue::Inlined(vec![1u8; val_ref.length as usize]).try_to_vec().unwrap().len();
+                for i in 0..limits.len() {
+                    if val_ref.length <= limits[i] {
+                        space_inlined[i] += inlined_len;
+                        cnt_inlined[i] += 1usize;
+                    } else {
+                        space_inlined[i] += val.len();
+                    }
+                }
+            }
+            _ => panic!()
+        }
+        refs_space += val.len();
+        tot_sz += key.len() + val.len();
+        cnt += 1;
+        if cnt % 1000000 == 0 {
+            println!("prog {}M total: {}MB vals: {}MB", cnt / 1000_000, tot_sz / 1000_000, tot_vals / 1000_000);
+        }
+    }
+    all_vals.sort();
+    println!("done {}M total: {}MB vals: {}MB, refs space: {}MB", cnt / 1000_000, tot_sz / 1000_000, tot_vals / 1000_000, refs_space / 1000_000);
+    for p in [10.0, 50.0, 75.0, 90.0, 95.0, 99.0, 99.5, 99.9, 99.99, 99.9999] {
+        let i = ((all_vals.len() as f64 - 1.0) * p / 100.0) as usize;
+        println!("p{p}: {}", all_vals[i])
+    }
+    for i in 0..limits.len() {
+        println!("limit {}: inlined {}M, space: {}", limits[i], cnt_inlined[i] as f64 / cnt as f64, space_inlined[i] as f64 / refs_space as f64);
+    }
 }

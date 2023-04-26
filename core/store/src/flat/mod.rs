@@ -39,6 +39,7 @@ pub use manager::FlatStorageManager;
 pub use metrics::FlatStorageCreationMetrics;
 pub use storage::FlatStorage;
 pub use types::{
+    FlatStateValue,
     BlockInfo, FetchingStateStatus, FlatStorageCreationStatus, FlatStorageError,
     FlatStorageReadyStatus, FlatStorageStatus,
 };
