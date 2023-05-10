@@ -121,8 +121,8 @@ impl NeardCmd {
             NeardSubCommand::FlatStorage(cmd) => {
                 //cmd.run(&home_dir)?;
                 //create_test_data();
-                //dump_cmd();
-                analyze();
+                dump_cmd();
+                //analyze();
             }
             NeardSubCommand::ValidateConfig(cmd) => {
                 cmd.run(&home_dir)?;
