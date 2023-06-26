@@ -15,8 +15,13 @@ pub(crate) mod snapshot;
 /// List of integer RocskDB properties we’re reading when collecting statistics.
 ///
 /// In the end, they are exported as Prometheus metrics.
-const CF_PROPERTY_NAMES: [&'static std::ffi::CStr; 1] =
-    [::rocksdb::properties::LIVE_SST_FILES_SIZE];
+const CF_PROPERTY_NAMES: [&'static std::ffi::CStr; 5] = [
+    ::rocksdb::properties::LIVE_SST_FILES_SIZE,
+    ::rocksdb::properties::ESTIMATE_TABLE_READERS_MEM,
+    ::rocksdb::properties::NUM_RUNNING_COMPACTIONS,
+    ::rocksdb::properties::BLOCK_CACHE_CAPACITY,
+    ::rocksdb::properties::BLOCK_CACHE_USAGE,
+];
 
 pub struct RocksDB {
     db: DB,
@@ -453,7 +458,7 @@ fn rocksdb_block_based_options(
     block_opts
         .set_block_cache(&Cache::new_lru_cache(cache_size.as_u64().try_into().unwrap()).unwrap());
     block_opts.set_pin_l0_filter_and_index_blocks_in_cache(true);
-    block_opts.set_cache_index_and_filter_blocks(true);
+    block_opts.set_cache_index_and_filter_blocks(false);
     block_opts.set_bloom_filter(10.0, true);
     block_opts
 }
@@ -467,6 +472,7 @@ fn rocksdb_column_options(col: DBCol, store_config: &StoreConfig, temp: Temperat
         store_config.block_size,
         cache_size,
     ));
+    opts.set_use_direct_reads(true);
 
     // Note that this function changes a lot of rustdb parameters including:
     //      write_buffer_size = memtable_memory_budget / 4
