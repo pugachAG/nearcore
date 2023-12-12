@@ -664,6 +664,7 @@ impl Trie {
             self.flat_storage_chunk_view.clone(),
         );
         trie.recorder = Some(RefCell::new(TrieRecorder::new()));
+        trie.charge_gas_for_trie_node_access = self.charge_gas_for_trie_node_access;
         trie
     }
 
@@ -717,15 +718,16 @@ impl Trie {
         use_accounting_cache: bool,
     ) -> Result<Arc<[u8]>, StorageError> {
         let result = if use_accounting_cache {
-            self.accounting_cache
+            let result = self.accounting_cache
                 .borrow_mut()
-                .retrieve_raw_bytes_with_accounting(hash, &*self.storage)?
+                .retrieve_raw_bytes_with_accounting(hash, &*self.storage)?;
+            if let Some(recorder) = &self.recorder {
+                recorder.borrow_mut().record(hash, result.clone());
+            }
+            result
         } else {
             self.storage.retrieve_raw_bytes(hash)?
         };
-        if let Some(recorder) = &self.recorder {
-            recorder.borrow_mut().record(hash, result.clone());
-        }
         Ok(result)
     }
 

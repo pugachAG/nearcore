@@ -251,6 +251,10 @@ impl TrieCache {
         self.lock().get(key)
     }
 
+    pub fn size(&self) -> u64 {
+        self.lock().total_size
+    }
+
     pub fn clear(&self) {
         self.lock().clear()
     }

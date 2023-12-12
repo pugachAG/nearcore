@@ -1,3 +1,4 @@
+use crate::adhoc::AdHocCommand;
 use crate::adjust_database::ChangeDbKindCommand;
 use crate::analyse_data_size_distribution::AnalyseDataSizeDistributionCommand;
 use crate::analyse_gas_usage::AnalyseGasUsageCommand;
@@ -46,6 +47,8 @@ enum SubCommand {
 
     /// Loads an in-memory trie for research purposes.
     LoadMemTrie(LoadMemTrieCommand),
+
+    AdHoc(AdHocCommand),
 }
 
 impl DatabaseCommand {
@@ -73,6 +76,9 @@ impl DatabaseCommand {
                 )
                 .unwrap_or_else(|e| panic!("Error loading config: {:#}", e));
                 cmd.run(near_config, home)
+            },
+            SubCommand::AdHoc(cmd) => {
+                cmd.run(home)
             }
         }
     }

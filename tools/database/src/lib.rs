@@ -10,3 +10,4 @@ mod memtrie;
 mod run_migrations;
 mod state_perf;
 mod utils;
+mod adhoc;
